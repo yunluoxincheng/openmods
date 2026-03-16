@@ -26,6 +26,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
           OPENMODS_RELEASE: "true"
+          SKIP_RELEASE_UPLOAD: "true"
 
       - name: Get version
         id: version
