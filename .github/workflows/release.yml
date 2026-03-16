@@ -10,9 +10,8 @@ permissions:
   id-token: write
 
 jobs:
-  build-and-publish:
+  build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -27,19 +26,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           OPENMODS_RELEASE: "true"
           SKIP_RELEASE_UPLOAD: "true"
-
-      - name: List dist contents
-        working-directory: packages/opencode
-        run: |
-          echo "=== dist/ ==="
-          ls -la dist/
-          echo ""
-          for d in dist/openmods-ai-*/; do
-            echo "=== $d ==="
-            ls -la "$d"
-            echo "=== $d/package.json ==="
-            cat "${d}package.json" 2>/dev/null || echo "No package.json"
-          done
 
       - name: Get version
         id: version
@@ -59,38 +45,68 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Upload dist as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: packages/opencode/dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package:
+          - openmods-ai-linux-arm64
+          - openmods-ai-linux-x64
+          - openmods-ai-darwin-arm64
+          - openmods-ai-darwin-x64
+          - openmods-ai-windows-arm64
+          - openmods-ai-windows-x64
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
       - name: Setup Node.js for npm
         uses: actions/setup-node@v4
         with:
           node-version: "20"
           registry-url: "https://registry.npmjs.org"
 
-      - name: Publish platform packages to npm
-        working-directory: packages/opencode/dist
+      - name: Publish platform package
         run: |
-          for dir in openmods-ai-*/; do
-            if [ -f "${dir}package.json" ]; then
-              name=$(basename "$dir")
-              echo "=== Publishing $name ==="
-              echo "Contents:"
-              ls -la "$dir"
-              echo "package.json:"
-              cat "${dir}package.json"
-              cd "$dir"
-              npm publish --access public --tag latest
-              cd ..
-            fi
-          done
+          if [ -d "dist/${{ matrix.package }}" ]; then
+            echo "Publishing ${{ matrix.package }}..."
+            npm publish "dist/${{ matrix.package }}" --access public --tag latest
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Create main package
-        working-directory: packages/opencode/dist
+  publish-main:
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Setup Node.js for npm
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Create and publish main package
         run: |
           # Get all platform package names and versions
           binaries="{"
           first=true
-          for dir in openmods-ai-*/; do
+          for dir in dist/openmods-ai-*/; do
             if [ -f "${dir}package.json" ]; then
               pkg_name=$(node -p "require('./${dir}package.json').name")
               pkg_version=$(node -p "require('./${dir}package.json').version")
@@ -105,16 +121,52 @@ jobs:
           binaries+="}"
 
           # Create main package directory
-          mkdir -p openmods-ai/bin
-          cp ../bin/openmods openmods-ai/bin/
-          cp ../script/postinstall.mjs openmods-ai/
+          mkdir -p dist/openmods-ai/bin
+          cp dist/openmods-ai-linux-x64/bin/openmods dist/openmods-ai/bin/ 2>/dev/null || true
+
+          # Create postinstall script
+          cat > dist/openmods-ai/postinstall.mjs << 'EOF'
+          #!/usr/bin/env node
+          import { spawnSync } from "child_process"
+          import { fileURLToPath } from "url"
+          import { dirname, join } from "path"
+          import { platform } from "os"
+          import { existsSync } from "fs"
+
+          const __dirname = dirname(fileURLToPath(import.meta.url))
+          const isWindows = platform() === "win32"
+          const binaryName = isWindows ? "openmods.exe" : "openmods"
+
+          function getPackageName() {
+            const p = platform()
+            const a = process.arch
+            if (p === "darwin") return `openmods-ai-darwin-${a}`
+            if (p === "linux") return `openmods-ai-linux-${a}`
+            if (p === "win32") return `openmods-ai-windows-${a}`
+            return null
+          }
+
+          const pkgName = getPackageName()
+          if (!pkgName) {
+            console.log("Unsupported platform")
+            process.exit(0)
+          }
+
+          try {
+            const binaryPath = join(__dirname, "..", pkgName, "bin", binaryName)
+            if (existsSync(binaryPath)) {
+              console.log("Binary found:", binaryPath)
+            }
+          } catch (e) {
+            console.log("Postinstall skipped:", e.message)
+          }
+          EOF
 
           # Create package.json
-          version="${{ steps.version.outputs.version }}"
-          cat > openmods-ai/package.json << EOF
+          cat > dist/openmods-ai/package.json << EOF
           {
             "name": "openmods-ai",
-            "version": "$version",
+            "version": "0.1.0",
             "license": "MIT",
             "files": ["bin", "postinstall.mjs"],
             "bin": {
@@ -127,14 +179,7 @@ jobs:
           }
           EOF
 
-          echo "=== Main package ==="
-          cat openmods-ai/package.json
-          ls -la openmods-ai/
-
-      - name: Publish main package to npm
-        working-directory: packages/opencode/dist/openmods-ai
-        run: |
-          echo "=== Publishing openmods-ai ==="
-          npm publish --access public --tag latest
+          echo "Publishing openmods-ai..."
+          npm publish dist/openmods-ai --access public --tag latest
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
