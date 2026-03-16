@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://openmods.dev">
-    <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="OpenMods logo">
+    <img src="logo.png" alt="OpenMods logo">
   </a>
 </p>
 <p align="center">AI-powered Minecraft Mod Development CLI</p>
@@ -14,7 +14,7 @@
   <a href="README_zh.md">简体中文</a>
 </p>
 
-[![OpenMods Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://openmods.dev)
+[![OpenMods Terminal UI](cli.png)](https://openmods.dev)
 
 ---
 
@@ -152,7 +152,7 @@ The `openmods.json` file is automatically created by the agent, or you can creat
 
 ```
 1. Project config (./openmods.json)
-2. Custom config (OPENCODE_CONFIG environment variable)
+2. Custom config (OPENMODS_CONFIG environment variable)
 3. Global config (~/.config/openmods/openmods.json)
 ```
 
