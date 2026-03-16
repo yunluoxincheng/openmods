@@ -10,7 +10,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const require = createRequire(import.meta.url)
 
 function detectPlatformAndArch() {
-  // Map platform names
   let platform
   switch (os.platform()) {
     case "darwin":
@@ -27,7 +26,6 @@ function detectPlatformAndArch() {
       break
   }
 
-  // Map architecture names
   let arch
   switch (os.arch()) {
     case "x64":
@@ -49,11 +47,10 @@ function detectPlatformAndArch() {
 
 function findBinary() {
   const { platform, arch } = detectPlatformAndArch()
-  const packageName = `opencode-${platform}-${arch}`
-  const binaryName = platform === "windows" ? "opencode.exe" : "opencode"
+  const packageName = `openmods-ai-${platform}-${arch}`
+  const binaryName = platform === "windows" ? "openmods.exe" : "openmods"
 
   try {
-    // Use require.resolve to find the package
     const packageJsonPath = require.resolve(`${packageName}/package.json`)
     const packageDir = path.dirname(packageJsonPath)
     const binaryPath = path.join(packageDir, "bin", binaryName)
@@ -72,12 +69,10 @@ function prepareBinDirectory(binaryName) {
   const binDir = path.join(__dirname, "bin")
   const targetPath = path.join(binDir, binaryName)
 
-  // Ensure bin directory exists
   if (!fs.existsSync(binDir)) {
     fs.mkdirSync(binDir, { recursive: true })
   }
 
-  // Remove existing binary/symlink if it exists
   if (fs.existsSync(targetPath)) {
     fs.unlinkSync(targetPath)
   }
@@ -89,9 +84,8 @@ function symlinkBinary(sourcePath, binaryName) {
   const { targetPath } = prepareBinDirectory(binaryName)
 
   fs.symlinkSync(sourcePath, targetPath)
-  console.log(`opencode binary symlinked: ${targetPath} -> ${sourcePath}`)
+  console.log(`openmods binary symlinked: ${targetPath} -> ${sourcePath}`)
 
-  // Verify the file exists after operation
   if (!fs.existsSync(targetPath)) {
     throw new Error(`Failed to symlink binary to ${targetPath}`)
   }
@@ -100,16 +94,12 @@ function symlinkBinary(sourcePath, binaryName) {
 async function main() {
   try {
     if (os.platform() === "win32") {
-      // On Windows, the .exe is already included in the package and bin field points to it
-      // No postinstall setup needed
       console.log("Windows detected: binary setup not needed (using packaged .exe)")
       return
     }
 
-    // On non-Windows platforms, just verify the binary package exists
-    // Don't replace the wrapper script - it handles binary execution
     const { binaryPath } = findBinary()
-    const target = path.join(__dirname, "bin", ".opencode")
+    const target = path.join(__dirname, "bin", ".openmods")
     if (fs.existsSync(target)) fs.unlinkSync(target)
     try {
       fs.linkSync(binaryPath, target)
@@ -117,8 +107,9 @@ async function main() {
       fs.copyFileSync(binaryPath, target)
     }
     fs.chmodSync(target, 0o755)
+    console.log("OpenMods binary installed successfully!")
   } catch (error) {
-    console.error("Failed to setup opencode binary:", error.message)
+    console.error("Failed to setup openmods binary:", error.message)
     process.exit(1)
   }
 }

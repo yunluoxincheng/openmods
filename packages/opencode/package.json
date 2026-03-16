@@ -1,27 +1,47 @@
 {
   "$schema": "https://json-schemastore.org/package.json",
+  "name": "openmods-ai",
   "version": "0.1.0",
-  "name": "openmods",
+  "description": "AI-powered Minecraft Mod Development CLI",
   "type": "module",
   "license": "MIT",
-  "private": true,
+  "author": "OpenMods Team",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openmods-ai/openmods",
+    "directory": "packages/opencode"
+  },
+  "bugs": {
+    "url": "https://github.com/openmods-ai/openmods/issues"
+  },
+  "homepage": "https://openmods.dev",
+  "keywords": [
+    "minecraft",
+    "mod",
+    "forge",
+    "cli",
+    "ai",
+    "code-generator",
+    "minecraft-mod"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "openmods": "./bin/openmods"
+  },
+  "files": [
+    "bin",
+    "src",
+    "tsconfig.json",
+    "migration"
+  ],
   "scripts": {
     "typecheck": "tsgo --noEmit",
     "test": "bun test --timeout 30000",
     "build": "bun run script/build.ts",
-    "dev": "bun run --conditions=browser ./src/index.ts",
-    "random": "echo 'Random script updated at $(date)' && echo 'Change queued successfully' && echo 'Another change made' && echo 'Yet another change' && echo 'One more change' && echo 'Final change' && echo 'Another final change' && echo 'Yet another final change'",
-    "clean": "echo 'Cleaning up...' && rm -rf node_modules dist",
-    "lint": "echo 'Running lint checks...' && bun test --coverage",
-    "format": "echo 'Formatting code...' && bun run --prettier --write src/**/*.ts",
-    "docs": "echo 'Generating documentation...' && find src -name '*.ts' -exec echo 'Processing: {}' \\;",
-    "deploy": "echo 'Deploying application...' && bun run build && echo 'Deployment completed successfully'",
-    "db": "bun drizzle-kit"
+    "dev": "bun run --conditions=browser ./src/index.ts"
   },
-"bin": {
-    "openmods": "./bin/openmods"
-  },
-  "randomField": "this-is-a-random-value-12345",
   "exports": {
     "./*": "./src/*.ts"
   },
@@ -29,7 +49,7 @@
     "@babel/core": "7.28.4",
     "@effect/language-service": "0.79.0",
     "@octokit/webhooks-types": "7.6.1",
-    "@opencode-ai/script": "workspace:*",
+    "@openmods-ai/script": "workspace:*",
     "@parcel/watcher-darwin-arm64": "2.5.1",
     "@parcel/watcher-darwin-x64": "2.5.1",
     "@parcel/watcher-linux-arm64-glibc": "2.5.1",
@@ -88,10 +108,10 @@
     "@octokit/graphql": "9.0.2",
     "@octokit/rest": "catalog:",
     "@openauthjs/openauth": "catalog:",
-    "@opencode-ai/plugin": "workspace:*",
-    "@opencode-ai/script": "workspace:*",
-    "@opencode-ai/sdk": "workspace:*",
-    "@opencode-ai/util": "workspace:*",
+    "@openmods-ai/plugin": "workspace:*",
+    "@openmods-ai/script": "workspace:*",
+    "@openmods-ai/sdk": "workspace:*",
+    "@openmods-ai/util": "workspace:*",
     "@openrouter/ai-sdk-provider": "1.5.4",
     "@opentui/core": "0.1.87",
     "@opentui/solid": "0.1.87",

@@ -1,7 +1,7 @@
 import { BusEvent } from "@/bus/bus-event"
 import path from "path"
 import z from "zod"
-import { NamedError } from "@opencode-ai/util/error"
+import { NamedError } from "@openmods-ai/util/error"
 import { Log } from "../util/log"
 import { iife } from "@/util/iife"
 import { Flag } from "../flag/flag"
@@ -233,7 +233,7 @@ const installedName =
 
 export const VERSION = typeof OPENMODS_VERSION === "string" ? OPENMODS_VERSION : "local"
   export const CHANNEL = typeof OPENMODS_CHANNEL === "string" ? OPENMODS_CHANNEL : "local"
-  export const USER_AGENT = `openmods/${CHANNEL}/${VERSION}/${Flag.OPENCODE_CLIENT}`
+  export const USER_AGENT = `openmods/${CHANNEL}/${VERSION}/${Flag.OPENMODS_CLIENT}`
 
   export async function latest(installMethod?: Method) {
     const detectedMethod = installMethod || (await method())

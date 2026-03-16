@@ -1,0 +1,113 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-bun
+
+      - name: Build all binaries
+        working-directory: packages/opencode
+        run: bun run script/build.ts
+        env:
+          GH_REPO: ${{ github.repository }}
+
+      - name: Get version
+        id: version
+        working-directory: packages/opencode
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Create release archives
+        working-directory: packages/opencode/dist
+        run: |
+          for dir in openmods-ai-*/; do
+            name="${dir%/}"
+            if [[ "$name" == *linux* ]]; then
+              tar -czf "${name}.tar.gz" -C "$name" bin
+            else
+              zip -r "${name}.zip" "$name/bin"
+            fi
+          done
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries
+          path: |
+            packages/opencode/dist/*.tar.gz
+            packages/opencode/dist/*.zip
+          retention-days: 1
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: binaries
+          path: packages/opencode/dist
+
+      - uses: ./.github/actions/setup-bun
+
+      - name: Download dist packages
+        uses: actions/download-artifact@v4
+        with:
+          name: binaries
+          path: dist-archives
+
+      - name: Prepare npm packages
+        working-directory: packages/opencode
+        run: |
+          mkdir -p dist
+          for f in ../../dist-archives/*.{tar.gz,zip}; do
+            [ -f "$f" ] && cp "$f" dist/ || true
+          done
+          ls -la dist/
+
+      - name: Get version
+        id: version
+        working-directory: packages/opencode
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: OpenMods v${{ steps.version.outputs.version }}
+          files: |
+            packages/opencode/dist/*.tar.gz
+            packages/opencode/dist/*.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js for npm
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Publish to npm
+        working-directory: packages/opencode
+        run: bun run script/publish.ts
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -1,6 +1,6 @@
 {
-  "$schema": "https://json.schemastore.org/package.json",
-  "name": "@opencode-ai/plugin",
+  "$schema": "https://json-schemastore.org/package.json",
+  "name": "@openmods-ai/plugin",
   "version": "1.2.26",
   "type": "module",
   "license": "MIT",
@@ -13,10 +13,10 @@
     "./tool": "./src/tool.ts"
   },
   "files": [
-    "dist"
+    "src"
   ],
   "dependencies": {
-    "@opencode-ai/sdk": "workspace:*",
+    "@openmods-ai/sdk": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
@@ -25,4 +25,5 @@
     "typescript": "catalog:",
     "@typescript/native-preview": "catalog:"
   }
+}
 }

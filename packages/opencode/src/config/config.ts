@@ -9,7 +9,7 @@ import { mergeDeep, pipe, unique } from "remeda"
 import { Global } from "../global"
 import fs from "fs/promises"
 import { lazy } from "../util/lazy"
-import { NamedError } from "@opencode-ai/util/error"
+import { NamedError } from "@openmods-ai/util/error"
 import { Flag } from "../flag/flag"
 import { Auth } from "../auth"
 import { Env } from "../env"
@@ -58,7 +58,7 @@ export namespace Config {
   }
 
   export function managedConfigDir() {
-    return process.env.OPENCODE_TEST_MANAGED_CONFIG_DIR || systemManagedConfigDir()
+    return process.env.OPENMODS_TEST_MANAGED_CONFIG_DIR || systemManagedConfigDir()
   }
 
   const managedDir = managedConfigDir()
@@ -81,10 +81,10 @@ export namespace Config {
     // Config loading order (low -> high precedence): https://openmods.dev/docs/config#precedence-order
     // 1) Remote .well-known/openmods (org defaults)
     // 2) Global config (~/.config/openmods/openmods.json{,c})
-    // 3) Custom config (OPENCODE_CONFIG)
+    // 3) Custom config (OPENMODS_CONFIG)
     // 4) Project config (openmods.json{,c})
     // 5) .openmods directories (.openmods/agents/, .openmods/commands/, .openmods/plugins/, .openmods/openmods.json{,c})
-    // 6) Inline config (OPENCODE_CONFIG_CONTENT)
+    // 6) Inline config (OPENMODS_CONFIG_CONTENT)
     // Managed config directory is enterprise-only and always overrides everything above.
     let result: Info = {}
     for (const [key, value] of Object.entries(auth)) {
@@ -115,13 +115,13 @@ export namespace Config {
     result = mergeConfigConcatArrays(result, await global())
 
     // Custom config path overrides global config.
-    if (Flag.OPENCODE_CONFIG) {
-      result = mergeConfigConcatArrays(result, await loadFile(Flag.OPENCODE_CONFIG))
-      log.debug("loaded custom config", { path: Flag.OPENCODE_CONFIG })
+    if (Flag.OPENMODS_CONFIG) {
+      result = mergeConfigConcatArrays(result, await loadFile(Flag.OPENMODS_CONFIG))
+      log.debug("loaded custom config", { path: Flag.OPENMODS_CONFIG })
     }
 
     // Project config overrides global and remote config.
-    if (!Flag.OPENCODE_DISABLE_PROJECT_CONFIG) {
+    if (!Flag.OPENMODS_DISABLE_PROJECT_CONFIG) {
       for (const file of await ConfigPaths.projectFiles("openmods", Instance.directory, Instance.worktree)) {
         result = mergeConfigConcatArrays(result, await loadFile(file))
       }
@@ -134,14 +134,14 @@ export namespace Config {
     const directories = await ConfigPaths.directories(Instance.directory, Instance.worktree)
 
     // .openmods directory config overrides (project and global) config sources.
-    if (Flag.OPENCODE_CONFIG_DIR) {
-      log.debug("loading config from OPENCODE_CONFIG_DIR", { path: Flag.OPENCODE_CONFIG_DIR })
+    if (Flag.OPENMODS_CONFIG_DIR) {
+      log.debug("loading config from OPENMODS_CONFIG_DIR", { path: Flag.OPENMODS_CONFIG_DIR })
     }
 
     const deps = []
 
     for (const dir of unique(directories)) {
-      if (dir.endsWith(".openmods") || dir === Flag.OPENCODE_CONFIG_DIR) {
+      if (dir.endsWith(".openmods") || dir === Flag.OPENMODS_CONFIG_DIR) {
         for (const file of ["openmods.jsonc", "openmods.json"]) {
           log.debug(`loading config from ${path.join(dir, file)}`)
           result = mergeConfigConcatArrays(result, await loadFile(path.join(dir, file)))
@@ -166,15 +166,15 @@ export namespace Config {
     }
 
     // Inline config content overrides all non-managed config sources.
-    if (process.env.OPENCODE_CONFIG_CONTENT) {
+    if (process.env.OPENMODS_CONFIG_CONTENT) {
       result = mergeConfigConcatArrays(
         result,
-        await load(process.env.OPENCODE_CONFIG_CONTENT, {
+        await load(process.env.OPENMODS_CONFIG_CONTENT, {
           dir: Instance.directory,
-          source: "OPENCODE_CONFIG_CONTENT",
+          source: "OPENMODS_CONFIG_CONTENT",
         }),
       )
-      log.debug("loaded custom config from OPENCODE_CONFIG_CONTENT")
+      log.debug("loaded custom config from OPENMODS_CONFIG_CONTENT")
     }
 
     const active = Account.active()
@@ -185,8 +185,8 @@ export namespace Config {
           Account.token(active.id),
         ])
         if (token) {
-          process.env["OPENCODE_CONSOLE_TOKEN"] = token
-          Env.set("OPENCODE_CONSOLE_TOKEN", token)
+          process.env["OPENMODS_CONSOLE_TOKEN"] = token
+          Env.set("OPENMODS_CONSOLE_TOKEN", token)
         }
 
         if (config) {
@@ -223,8 +223,8 @@ export namespace Config {
       })
     }
 
-    if (Flag.OPENCODE_PERMISSION) {
-      result.permission = mergeDeep(result.permission ?? {}, JSON.parse(Flag.OPENCODE_PERMISSION))
+    if (Flag.OPENMODS_PERMISSION) {
+      result.permission = mergeDeep(result.permission ?? {}, JSON.parse(Flag.OPENMODS_PERMISSION))
     }
 
     // Backwards compatibility: legacy top-level `tools` config
@@ -249,10 +249,10 @@ export namespace Config {
     }
 
     // Apply flag overrides for compaction settings
-    if (Flag.OPENCODE_DISABLE_AUTOCOMPACT) {
+    if (Flag.OPENMODS_DISABLE_AUTOCOMPACT) {
       result.compaction = { ...result.compaction, auto: false }
     }
-    if (Flag.OPENCODE_DISABLE_PRUNE) {
+    if (Flag.OPENMODS_DISABLE_PRUNE) {
       result.compaction = { ...result.compaction, prune: false }
     }
 
@@ -279,7 +279,7 @@ export namespace Config {
     }))
     json.dependencies = {
       ...json.dependencies,
-      "@opencode-ai/plugin": targetVersion,
+      "@openmods-ai/plugin": targetVersion,
     }
     await Filesystem.writeJson(pkg, json)
 
@@ -307,7 +307,7 @@ export namespace Config {
           stdout: err.stdout.toString(),
           stderr: err.stderr.toString(),
         }
-        if (Flag.OPENCODE_STRICT_CONFIG_DEPS) {
+        if (Flag.OPENMODS_STRICT_CONFIG_DEPS) {
           log.error("failed to install dependencies", detail)
           throw err
         }
@@ -315,7 +315,7 @@ export namespace Config {
         return
       }
 
-      if (Flag.OPENCODE_STRICT_CONFIG_DEPS) {
+      if (Flag.OPENMODS_STRICT_CONFIG_DEPS) {
         log.error("failed to install dependencies", { dir, error: err })
         throw err
       }
@@ -350,15 +350,15 @@ export namespace Config {
 
     const parsed = await Filesystem.readJson<{ dependencies?: Record<string, string> }>(pkg).catch(() => null)
     const dependencies = parsed?.dependencies ?? {}
-    const depVersion = dependencies["@opencode-ai/plugin"]
+    const depVersion = dependencies["@openmods-ai/plugin"]
     if (!depVersion) return true
 
     const targetVersion = Installation.isLocal() ? "latest" : Installation.VERSION
     if (targetVersion === "latest") {
-      const isOutdated = await PackageRegistry.isOutdated("@opencode-ai/plugin", depVersion, dir)
+      const isOutdated = await PackageRegistry.isOutdated("@openmods-ai/plugin", depVersion, dir)
       if (!isOutdated) return false
       log.info("Cached version is outdated, proceeding with install", {
-        pkg: "@opencode-ai/plugin",
+        pkg: "@openmods-ai/plugin",
         cachedVersion: depVersion,
       })
       return true

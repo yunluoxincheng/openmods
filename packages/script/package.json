@@ -1,15 +1,20 @@
 {
-  "$schema": "https://json.schemastore.org/package",
-  "name": "@opencode-ai/script",
+  "$schema": "https://json-schemastore.org/package",
+  "name": "@openmods-ai/script",
+  "version": "1.2.26",
   "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
   "dependencies": {
     "semver": "^7.6.3"
   },
   "devDependencies": {
     "@types/bun": "catalog:",
     "@types/semver": "^7.5.8"
-  },
-  "exports": {
-    ".": "./src/index.ts"
   }
+}
 }
