@@ -51,18 +51,9 @@ jobs:
           name: dist
           path: packages/opencode/dist/
 
-  publish:
+  publish-platforms:
     needs: build
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        package:
-          - openmods-ai-linux-arm64
-          - openmods-ai-linux-x64
-          - openmods-ai-darwin-arm64
-          - openmods-ai-darwin-x64
-          - openmods-ai-windows-arm64
-          - openmods-ai-windows-x64
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
@@ -76,17 +67,22 @@ jobs:
           node-version: "20"
           registry-url: "https://registry.npmjs.org"
 
-      - name: Publish platform package
+      - name: Publish all platform packages
         run: |
-          if [ -d "dist/${{ matrix.package }}" ]; then
-            echo "Publishing ${{ matrix.package }}..."
-            npm publish "dist/${{ matrix.package }}" --access public --tag latest
-          fi
+          for dir in dist/openmods-ai-*/; do
+            if [ -f "${dir}package.json" ]; then
+              name=$(basename "$dir")
+              echo "=== Publishing $name ==="
+              npm publish --access public --tag latest
+              echo "Waiting 30 seconds..."
+              sleep 30
+            fi
+          done
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   publish-main:
-    needs: publish
+    needs: publish-platforms
     runs-on: ubuntu-latest
     steps:
       - name: Download artifact
@@ -108,8 +104,8 @@ jobs:
           first=true
           for dir in dist/openmods-ai-*/; do
             if [ -f "${dir}package.json" ]; then
-              pkg_name=$(node -p "require('./${dir}package.json').name")
-              pkg_version=$(node -p "require('./${dir}package.json').version")
+              pkg_name=$(cat "${dir}package.json" | node -e "console.log(JSON.parse(require('fs').readFileSync(0)).name)")
+              pkg_version=$(cat "${dir}package.json" | node -e "console.log(JSON.parse(require('fs').readFileSync(0)).version)")
               if [ "$first" = true ]; then
                 first=false
               else
@@ -122,10 +118,12 @@ jobs:
 
           # Create main package directory
           mkdir -p dist/openmods-ai/bin
-          cp dist/openmods-ai-linux-x64/bin/openmods dist/openmods-ai/bin/ 2>/dev/null || true
+          if [ -f "dist/openmods-ai-linux-x64/bin/openmods" ]; then
+            cp dist/openmods-ai-linux-x64/bin/openmods dist/openmods-ai/bin/
+          fi
 
           # Create postinstall script
-          cat > dist/openmods-ai/postinstall.mjs << 'EOF'
+          cat > dist/openmods-ai/postinstall.mjs << 'POSTINSTALL'
           #!/usr/bin/env node
           import { spawnSync } from "child_process"
           import { fileURLToPath } from "url"
@@ -140,9 +138,9 @@ jobs:
           function getPackageName() {
             const p = platform()
             const a = process.arch
-            if (p === "darwin") return `openmods-ai-darwin-${a}`
-            if (p === "linux") return `openmods-ai-linux-${a}`
-            if (p === "win32") return `openmods-ai-windows-${a}`
+            if (p === "darwin") return "openmods-ai-darwin-" + a
+            if (p === "linux") return "openmods-ai-linux-" + a
+            if (p === "win32") return "openmods-ai-windows-" + a
             return null
           }
 
@@ -160,7 +158,7 @@ jobs:
           } catch (e) {
             console.log("Postinstall skipped:", e.message)
           }
-          EOF
+          POSTINSTALL
 
           # Create package.json
           cat > dist/openmods-ai/package.json << EOF
@@ -179,7 +177,10 @@ jobs:
           }
           EOF
 
-          echo "Publishing openmods-ai..."
+          echo "=== Main package.json ==="
+          cat dist/openmods-ai/package.json
+
+          echo "=== Publishing openmods-ai ==="
           npm publish dist/openmods-ai --access public --tag latest
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
