@@ -1,0 +1,28 @@
+#!/usr/bin/env node
+
+import { spawnSync } from "child_process"
+import { fileURLToPath } from "url"
+import { dirname, join } from "path"
+import { platform } from "os"
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+
+const scriptPath = join(__dirname, "..", "src", "index.ts")
+
+// Find bun executable
+const bunExe = platform() === "win32" ? "bun.cmd" : "bun"
+
+const result = spawnSync(bunExe, ["run", "--conditions=browser", scriptPath, ...process.argv.slice(2)], {
+  stdio: "inherit",
+  cwd: join(__dirname, ".."),
+  shell: platform() === "win32",
+})
+
+if (result.error) {
+  console.error(result.error.message)
+  process.exit(1)
+}
+
+const code = typeof result.status === "number" ? result.status : 0
+process.exit(code)
