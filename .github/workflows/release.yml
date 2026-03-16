@@ -30,7 +30,16 @@ jobs:
 
       - name: List dist contents
         working-directory: packages/opencode
-        run: ls -la dist/
+        run: |
+          echo "=== dist/ ==="
+          ls -la dist/
+          echo ""
+          for d in dist/openmods-ai-*/; do
+            echo "=== $d ==="
+            ls -la "$d"
+            echo "=== $d/package.json ==="
+            cat "${d}package.json" 2>/dev/null || echo "No package.json"
+          done
 
       - name: Get version
         id: version
@@ -57,26 +66,31 @@ jobs:
           registry-url: "https://registry.npmjs.org"
 
       - name: Publish platform packages to npm
-        working-directory: packages/opencode
+        working-directory: packages/opencode/dist
         run: |
-          for dir in dist/openmods-ai-*/; do
+          for dir in openmods-ai-*/; do
             if [ -f "${dir}package.json" ]; then
               name=$(basename "$dir")
               echo "=== Publishing $name ==="
+              echo "Contents:"
+              ls -la "$dir"
+              echo "package.json:"
               cat "${dir}package.json"
-              npm publish "${dir}" --access public --tag latest
+              cd "$dir"
+              npm publish --access public --tag latest
+              cd ..
             fi
           done
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create main package
-        working-directory: packages/opencode
+        working-directory: packages/opencode/dist
         run: |
           # Get all platform package names and versions
           binaries="{"
           first=true
-          for dir in dist/openmods-ai-*/; do
+          for dir in openmods-ai-*/; do
             if [ -f "${dir}package.json" ]; then
               pkg_name=$(node -p "require('./${dir}package.json').name")
               pkg_version=$(node -p "require('./${dir}package.json').version")
@@ -91,20 +105,18 @@ jobs:
           binaries+="}"
 
           # Create main package directory
-          mkdir -p dist/openmods-ai/bin
-          cp bin/openmods dist/openmods-ai/bin/
-          cp script/postinstall.mjs dist/openmods-ai/
-
-          # Copy LICENSE
-          cp ../../LICENSE dist/openmods-ai/ 2>/dev/null || echo "MIT" > dist/openmods-ai/LICENSE
+          mkdir -p openmods-ai/bin
+          cp ../bin/openmods openmods-ai/bin/
+          cp ../script/postinstall.mjs openmods-ai/
 
           # Create package.json
           version="${{ steps.version.outputs.version }}"
-          cat > dist/openmods-ai/package.json << EOF
+          cat > openmods-ai/package.json << EOF
           {
             "name": "openmods-ai",
             "version": "$version",
             "license": "MIT",
+            "files": ["bin", "postinstall.mjs"],
             "bin": {
               "openmods": "./bin/openmods"
             },
@@ -115,14 +127,14 @@ jobs:
           }
           EOF
 
-          echo "=== Main package.json ==="
-          cat dist/openmods-ai/package.json
+          echo "=== Main package ==="
+          cat openmods-ai/package.json
+          ls -la openmods-ai/
 
       - name: Publish main package to npm
         working-directory: packages/opencode/dist/openmods-ai
         run: |
-          echo "=== Publishing openmods-ai from $(pwd) ==="
-          ls -la
-          npm publish . --access public --tag latest
+          echo "=== Publishing openmods-ai ==="
+          npm publish --access public --tag latest
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

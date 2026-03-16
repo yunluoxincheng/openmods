@@ -207,6 +207,7 @@ for (const item of targets) {
         version: Script.version,
         os: [item.os],
         cpu: [item.arch],
+        files: ["bin"],
       },
       null,
       2,
