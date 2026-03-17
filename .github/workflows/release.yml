@@ -82,7 +82,9 @@ jobs:
               fi
               
               echo "=== Publishing $name@$version ==="
+              cd "$dir"
               npm publish --access public --tag latest
+              cd -
               count=$((count + 1))
               echo "Published $count packages"
               echo "Waiting 60 seconds to avoid rate limit..."
