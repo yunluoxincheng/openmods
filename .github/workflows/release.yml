@@ -73,7 +73,15 @@ jobs:
           for dir in dist/openmods-ai-*/; do
             if [ -f "${dir}package.json" ]; then
               name=$(basename "$dir")
-              echo "=== Publishing $name ==="
+              version=$(cat "${dir}package.json" | grep '"version"' | head -1 | sed 's/.*: *"\([^"]*\)".*/\1/')
+              
+              # Check if already published
+              if npm view "$name@$version" version 2>/dev/null; then
+                echo "=== Skipping $name@$version (already published) ==="
+                continue
+              fi
+              
+              echo "=== Publishing $name@$version ==="
               npm publish --access public --tag latest
               count=$((count + 1))
               echo "Published $count packages"
