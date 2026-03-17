@@ -69,13 +69,16 @@ jobs:
 
       - name: Publish all platform packages
         run: |
+          count=0
           for dir in dist/openmods-ai-*/; do
             if [ -f "${dir}package.json" ]; then
               name=$(basename "$dir")
               echo "=== Publishing $name ==="
               npm publish --access public --tag latest
-              echo "Waiting 30 seconds..."
-              sleep 30
+              count=$((count + 1))
+              echo "Published $count packages"
+              echo "Waiting 60 seconds to avoid rate limit..."
+              sleep 60
             fi
           done
         env:
