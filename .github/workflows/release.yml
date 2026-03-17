@@ -10,7 +10,7 @@ permissions:
   id-token: write
 
 jobs:
-  build:
+  build-and-publish:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -45,22 +45,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload dist as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist
-          path: packages/opencode/dist/
-
-  publish-platforms:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist
-
       - name: Setup Node.js for npm
         uses: actions/setup-node@v4
         with:
@@ -68,9 +52,9 @@ jobs:
           registry-url: "https://registry.npmjs.org"
 
       - name: Publish all platform packages
+        working-directory: packages/opencode/dist
         run: |
-          count=0
-          for dir in dist/openmods-ai-*/; do
+          for dir in openmods-ai-*/; do
             if [ -f "${dir}package.json" ]; then
               name=$(basename "$dir")
               version=$(cat "${dir}package.json" | grep '"version"' | head -1 | sed 's/.*: *"\([^"]*\)".*/\1/')
@@ -85,37 +69,18 @@ jobs:
               cd "$dir"
               npm publish --access public --tag latest
               cd -
-              count=$((count + 1))
-              echo "Published $count packages"
-              echo "Waiting 60 seconds to avoid rate limit..."
-              sleep 60
             fi
           done
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-  publish-main:
-    needs: publish-platforms
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist
-
-      - name: Setup Node.js for npm
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          registry-url: "https://registry.npmjs.org"
-
       - name: Create and publish main package
+        working-directory: packages/opencode/dist
         run: |
           # Get all platform package names and versions
           binaries="{"
           first=true
-          for dir in dist/openmods-ai-*/; do
+          for dir in openmods-ai-*/; do
             if [ -f "${dir}package.json" ]; then
               pkg_name=$(cat "${dir}package.json" | node -e "console.log(JSON.parse(require('fs').readFileSync(0)).name)")
               pkg_version=$(cat "${dir}package.json" | node -e "console.log(JSON.parse(require('fs').readFileSync(0)).version)")
@@ -130,13 +95,13 @@ jobs:
           binaries+="}"
 
           # Create main package directory
-          mkdir -p dist/openmods-ai/bin
-          if [ -f "dist/openmods-ai-linux-x64/bin/openmods" ]; then
-            cp dist/openmods-ai-linux-x64/bin/openmods dist/openmods-ai/bin/
+          mkdir -p openmods-ai/bin
+          if [ -f "openmods-ai-linux-x64/bin/openmods" ]; then
+            cp openmods-ai-linux-x64/bin/openmods openmods-ai/bin/
           fi
 
           # Create postinstall script
-          cat > dist/openmods-ai/postinstall.mjs << 'POSTINSTALL'
+          cat > openmods-ai/postinstall.mjs << 'POSTINSTALL'
           #!/usr/bin/env node
           import { spawnSync } from "child_process"
           import { fileURLToPath } from "url"
@@ -174,7 +139,7 @@ jobs:
           POSTINSTALL
 
           # Create package.json
-          cat > dist/openmods-ai/package.json << EOF
+          cat > openmods-ai/package.json << EOF
           {
             "name": "openmods-ai",
             "version": "0.1.0",
@@ -190,10 +155,7 @@ jobs:
           }
           EOF
 
-          echo "=== Main package.json ==="
-          cat dist/openmods-ai/package.json
-
           echo "=== Publishing openmods-ai ==="
-          npm publish dist/openmods-ai --access public --tag latest
+          npm publish openmods-ai --access public --tag latest
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
