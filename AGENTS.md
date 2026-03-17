@@ -47,14 +47,14 @@ bun dev                                    # Start TUI
 bun dev /path/to/project                   # Start in specific directory
 
 # Type Checking
-bun typecheck                              # From packages/opencode
+bun typecheck                              # From packages/core
 
 # Testing
 bun test                                   # Run tests
 bun test src/minecraft/__tests__/generate.test.ts  # Specific test
 
 # Building
-./packages/opencode/script/build.ts --single    # Build executable
+./packages/core/script/build.ts --single    # Build executable
 ```
 
 ---
@@ -62,7 +62,7 @@ bun test src/minecraft/__tests__/generate.test.ts  # Specific test
 ## Project Structure
 
 ```
-packages/opencode/src/
+packages/core/src/
 ├── minecraft/           # Minecraft-specific module
 │   ├── index.ts         # Module entry point
 │   ├── config.ts        # Configuration types
@@ -162,7 +162,7 @@ Templates are TypeScript functions returning string content. Context includes:
 
 - Avoid mocks; test actual implementation
 - Place tests in `src/**/__tests__/`
-- Run from `packages/opencode`, not repo root
+- Run from `packages/core`, not repo root
 
 ```typescript
 import { test, expect } from "bun:test"
@@ -182,7 +182,7 @@ test("validates block spec", () => {
 
 ## Type Checking
 
-Always run `bun typecheck` from package directories (e.g., `packages/opencode`), never `tsc` directly.
+Always run `bun typecheck` from package directories (e.g., `packages/core`), never `tsc` directly.
 
 ---
 

@@ -15,7 +15,7 @@ if ! npm whoami &>/dev/null; then
 fi
 
 # 获取当前版本
-VERSION=$(cat packages/opencode/package.json | grep '"version"' | head -1 | sed 's/.*: *"\([^"]*\)".*/\1/')
+VERSION=$(cat packages/core/package.json | grep '"version"' | head -1 | sed 's/.*: *"\([^"]*\)".*/\1/')
 echo "发布版本: $VERSION"
 
 # 发布依赖包
@@ -45,7 +45,7 @@ cd ../..
 
 echo ""
 echo "5️⃣ 发布 openmods-ai..."
-cd packages/opencode
+cd packages/core
 npm publish --access public
 cd ../..
 

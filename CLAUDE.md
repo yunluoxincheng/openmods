@@ -169,7 +169,7 @@ type ModuleType =
 ## CLI 命令
 
 ### 命令定义位置
-`packages/opencode/src/cli/cmd/mc.ts`
+`packages/core/src/cli/cmd/mc.ts`
 
 ### 可用命令
 

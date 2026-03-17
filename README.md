@@ -212,7 +212,7 @@ bun dev
 ### Build Executable
 
 ```bash
-./packages/opencode/script/build.ts --single
+./packages/core/script/build.ts --single
 ```
 
 ---

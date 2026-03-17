@@ -57,7 +57,7 @@ If the issue doesn't have "zen" or "opencode black" in it then don't add zen lab
 
 #### core
 
-Use for core server issues in `packages/opencode/`, excluding `packages/opencode/src/cli/cmd/tui/`.
+Use for core server issues in `packages/core/`, excluding `packages/core/src/cli/cmd/tui/`.
 
 Examples:
 
@@ -104,13 +104,13 @@ ONLY assign if the issue will have the "zen" label.
 - fwang
 - MrMushrooooom
 
-TUI (`packages/opencode/src/cli/cmd/tui/...`):
+TUI (`packages/core/src/cli/cmd/tui/...`):
 
 - thdxr for TUI UX/UI product decisions and interaction flow
 - kommander for OpenTUI engine issues: rendering artifacts, keybind handling, terminal compatibility, SSH behavior, and low-level perf bottlenecks
 - rekram1-node for TUI bugs that are not clearly OpenTUI engine issues
 
-Core (`packages/opencode/...`, excluding TUI subtree):
+Core (`packages/core/...`, excluding TUI subtree):
 
 - thdxr for sqlite/snapshot/memory bugs and larger architectural core features
 - jlongster for opencode server + API feature work (tool currently remaps jlongster -> thdxr until assignable)

@@ -19,7 +19,7 @@ jobs:
       - uses: ./.github/actions/setup-bun
 
       - name: Build all binaries
-        working-directory: packages/opencode
+        working-directory: packages/core
         run: bun run script/build.ts
         env:
           GH_REPO: ${{ github.repository }}
@@ -29,7 +29,7 @@ jobs:
 
       - name: Get version
         id: version
-        working-directory: packages/opencode
+        working-directory: packages/core
         run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
         shell: bash
 
@@ -39,8 +39,8 @@ jobs:
           tag_name: v${{ steps.version.outputs.version }}
           name: OpenMods v${{ steps.version.outputs.version }}
           files: |
-            packages/opencode/dist/*.zip
-            packages/opencode/dist/*.tar.gz
+            packages/core/dist/*.zip
+            packages/core/dist/*.tar.gz
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -52,7 +52,7 @@ jobs:
           registry-url: "https://registry.npmjs.org"
 
       - name: Publish all platform packages
-        working-directory: packages/opencode/dist
+        working-directory: packages/core/dist
         run: |
           for dir in openmods-ai-*/; do
             if [ -f "${dir}package.json" ]; then
@@ -75,7 +75,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create and publish main package
-        working-directory: packages/opencode/dist
+        working-directory: packages/core/dist
         run: |
           # Get all platform package names and versions
           binaries="{"

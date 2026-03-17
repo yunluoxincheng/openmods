@@ -212,7 +212,7 @@ bun dev
 ### 构建可执行文件
 
 ```bash
-./packages/opencode/script/build.ts --single
+./packages/core/script/build.ts --single
 ```
 
 ---
